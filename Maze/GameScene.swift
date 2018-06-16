@@ -8,80 +8,67 @@
 
 import SpriteKit
 import GameplayKit
+import CoreMotion
 
-class GameScene: SKScene {
+class GameScene: SKScene, SKPhysicsContactDelegate {
     
-    private var label : SKLabelNode?
-    private var spinnyNode : SKShapeNode?
+    let manager = CMMotionManager()
+    var player = SKSpriteNode()
+    var endNode = SKSpriteNode()
+    var col: Int = 1
     
     override func didMove(to view: SKView) {
         
-        // Get label node from scene and store it for use later
-        self.label = self.childNode(withName: "//helloLabel") as? SKLabelNode
-        if let label = self.label {
-            label.alpha = 0.0
-            label.run(SKAction.fadeIn(withDuration: 2.0))
-        }
+        self.physicsWorld.contactDelegate = self
         
-        // Create shape node to use during mouse interaction
-        let w = (self.size.width + self.size.height) * 0.05
-        self.spinnyNode = SKShapeNode.init(rectOf: CGSize.init(width: w, height: w), cornerRadius: w * 0.3)
+        player = self.childNode(withName: "player") as! SKSpriteNode
+        endNode = self.childNode(withName: "endNode") as! SKSpriteNode
         
-        if let spinnyNode = self.spinnyNode {
-            spinnyNode.lineWidth = 2.5
+        manager.startAccelerometerUpdates()
+        manager.accelerometerUpdateInterval = 0.1
+        manager.startAccelerometerUpdates(to: OperationQueue.main){
+            (Data, error) in
             
-            spinnyNode.run(SKAction.repeatForever(SKAction.rotate(byAngle: CGFloat(Double.pi), duration: 1)))
-            spinnyNode.run(SKAction.sequence([SKAction.wait(forDuration: 0.5),
-                                              SKAction.fadeOut(withDuration: 0.5),
-                                              SKAction.removeFromParent()]))
-        }
-    }
-    
-    
-    func touchDown(atPoint pos : CGPoint) {
-        if let n = self.spinnyNode?.copy() as! SKShapeNode? {
-            n.position = pos
-            n.strokeColor = SKColor.green
-            self.addChild(n)
-        }
-    }
-    
-    func touchMoved(toPoint pos : CGPoint) {
-        if let n = self.spinnyNode?.copy() as! SKShapeNode? {
-            n.position = pos
-            n.strokeColor = SKColor.blue
-            self.addChild(n)
-        }
-    }
-    
-    func touchUp(atPoint pos : CGPoint) {
-        if let n = self.spinnyNode?.copy() as! SKShapeNode? {
-            n.position = pos
-            n.strokeColor = SKColor.red
-            self.addChild(n)
-        }
-    }
-    
-    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-        if let label = self.label {
-            label.run(SKAction.init(named: "Pulse")!, withKey: "fadeInOut")
+            self.physicsWorld.gravity = CGVector(dx: CGFloat((Data?.acceleration.x)!) * 15, dy: CGFloat((Data?.acceleration.y)!) * 15)
         }
         
-        for t in touches { self.touchDown(atPoint: t.location(in: self)) }
     }
     
-    override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
-        for t in touches { self.touchMoved(toPoint: t.location(in: self)) }
+    func didBegin(_ contact: SKPhysicsContact) {
+        let bodyA = contact.bodyA
+        let bodyB = contact.bodyB
+        
+        if bodyA.categoryBitMask == 1 && bodyB.categoryBitMask == 2 || bodyA.categoryBitMask == 2 && bodyB.categoryBitMask == 1 {
+            var a = Int(arc4random_uniform(9) + 1)
+            if col == a && a != 9{
+                a = a + 1
+            } else if col == a && a == 9 {
+                a = 1
+            }
+            col = a
+            if a == 1 {
+                endNode.color = UIColor.white
+            } else if a == 2 {
+                endNode.color = UIColor.yellow
+            } else if a == 3 {
+                endNode.color = UIColor.purple
+            } else if a == 4 {
+                endNode.color = UIColor.orange
+            } else if a == 5 {
+                endNode.color = UIColor.magenta
+            } else if a == 6 {
+                endNode.color = UIColor.green
+            } else if a == 7 {
+                endNode.color = UIColor.cyan
+            } else if a == 8 {
+                endNode.color = UIColor.brown
+            } else {
+                endNode.color = UIColor.blue
+            }
+            
+        }
+        
     }
-    
-    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
-        for t in touches { self.touchUp(atPoint: t.location(in: self)) }
-    }
-    
-    override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
-        for t in touches { self.touchUp(atPoint: t.location(in: self)) }
-    }
-    
     
     override func update(_ currentTime: TimeInterval) {
         // Called before each frame is rendered
